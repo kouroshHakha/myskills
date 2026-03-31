@@ -3,9 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
-GLOBAL_SKILLS_DIR="${CURSOR_SKILLS_DIR:-$HOME/.cursor/skills}"
+GLOBAL_SKILLS_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
 PROJECT_DIR="${PROJECT_DIR:-$HOME/default}"
-PROJECT_SKILLS_DIR="$PROJECT_DIR/.cursor/skills"
+PROJECT_SKILLS_DIR="$PROJECT_DIR/.claude/skills"
 
 if [[ ! -d "$SKILLS_SRC" ]]; then
     echo "Error: No skills/ directory found at $SKILLS_SRC"
@@ -62,11 +62,11 @@ install_skills_to() {
     echo "  ($count skill(s) installed)"
 }
 
-echo "Installing skills to $GLOBAL_SKILLS_DIR (global) ..."
+echo "Installing skills to $GLOBAL_SKILLS_DIR (global, Claude Code) ..."
 install_skills_to "$GLOBAL_SKILLS_DIR"
 
 echo ""
-echo "Installing skills to $PROJECT_SKILLS_DIR (project) ..."
+echo "Installing skills to $PROJECT_SKILLS_DIR (project, Claude Code) ..."
 install_skills_to "$PROJECT_SKILLS_DIR"
 
 # --- Install worktree.conf to project dir ---

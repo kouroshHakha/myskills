@@ -1,41 +1,51 @@
 # myagent
 
-Cursor agent skills for working on the [Ray](https://github.com/ray-project/ray) codebase using git worktrees.
+Claude Code skills and a small installer for working on [Ray](https://github.com/ray-project/ray): git worktrees, toolchain setup (`npx`, Claude Code CLI), and installing Anyscale skill bundles via `npx skills`.
 
 ## Install
+
+From this directory:
 
 ```bash
 ./install.sh
 ```
 
-This symlinks each skill in `skills/` into `~/.cursor/skills/` so Cursor discovers them automatically. The install is idempotent — safe to re-run at any time.
+For each skill directory under `skills/` that contains a `SKILL.md`, the script creates symlinks in:
 
-To install to a custom location, set `CURSOR_SKILLS_DIR`:
+- **`~/.claude/skills/`** (global — override with **`CLAUDE_SKILLS_DIR`**)
+- **`$PROJECT_DIR/.claude/skills/`** (project — **`PROJECT_DIR`** defaults to **`$HOME/default`**)
+
+Re-running is safe (idempotent).
 
 ```bash
-CURSOR_SKILLS_DIR=/path/to/skills ./install.sh
+# Examples
+CLAUDE_SKILLS_DIR=/path/to/skills ./install.sh
+PROJECT_DIR=/path/to/workspace ./install.sh
 ```
 
 ## Configuration
 
-Edit `worktree.conf` with paths for your machine:
+Edit **`worktree.conf`** (used by the **ray-worktree** skill and worktree scripts):
 
 ```
-RAY_REPO=/path/to/ray          # Local Ray repo clone (required)
-RAY_PYTHON=/path/to/python3    # Python with Ray deps installed (optional, defaults to python3)
+RAY_REPO=/path/to/ray          # Local Ray clone (required)
+RAY_PYTHON=/path/to/python3    # Python with Ray deps (optional; default python3)
 ```
 
-If omitted, the scripts will attempt to auto-detect `RAY_REPO` from an editable pip install of Ray.
+If **`RAY_REPO`** is omitted, scripts may auto-detect Ray from an editable install.
 
 ## Skills
 
-| Skill | Description |
-|---|---|
-| `ray-worktree` | Create and manage Ray git worktrees for parallel development |
+| Skill | Purpose |
+|--------|---------|
+| **`ray-worktree`** | Create, use, and remove Ray git worktrees with per-worktree venvs (`worktree.conf`). |
+| **`install-npx`** | Install/upgrade Node, npm, and `npx` (e.g. via nvm) when the toolchain is missing. |
+| **`install-claude-code`** | Install the `claude` CLI (`claude.ai/install.sh`), fix **`PATH`** in **`~/.bashrc`**, verify. |
+| **`install-anyscale-skills`** | Install chosen Anyscale skill repos with `npx skills` (catalog + prompts; Claude + Cursor paths). |
 
-## Adding a new skill
+## Adding a skill
 
-Create a directory under `skills/` with a `SKILL.md`, then re-run `./install.sh`:
+Add a directory under **`skills/`** with a **`SKILL.md`**, then run **`./install.sh`**:
 
 ```
 skills/

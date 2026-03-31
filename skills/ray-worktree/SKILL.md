@@ -1,0 +1,98 @@
+---
+name: ray-worktree
+description: Manage Ray git worktrees for parallel development. Use when creating, activating, or removing Ray worktrees, or when working on Ray source code in a worktree-based workflow.
+---
+
+# Ray Worktree Workflow
+
+This skill provides git worktree management so multiple agents can work on the Ray codebase in parallel. Each worktree gets its own branch, directory, and Python virtual environment.
+
+## Locating Scripts
+
+The scripts live alongside this SKILL.md. Resolve the skill directory first:
+
+```bash
+SKILL_DIR="$(dirname "$(readlink -f "$0")")"
+# or, if running interactively:
+SKILL_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+```
+
+When invoked by an agent, the scripts are at:
+- `<skill-dir>/scripts/create-worktree.sh`
+- `<skill-dir>/scripts/remove-worktree.sh`
+
+Both scripts operate on the **current working directory** — run them from your project root (where `worktree.conf` and `ray-*/` directories live).
+
+## Prerequisites
+
+Assume these are met. If something goes wrong, verify they hold:
+
+1. **Ray repo**: A local clone of Ray with compiled C++ artifacts (`_raylet.so`) available either via editable install, bazel build, or a system-installed ray package.
+2. **Python environment**: conda/venv/system with Ray's dependencies installed.
+3. **Test deps** pre-installed in the base environment:
+   ```
+   pip install -r <ray-repo>/python/requirements/base-test-requirements.txt
+   pip install -r <ray-repo>/python/requirements/llm/llm-test-requirements.txt
+   pip install -r <ray-repo>/python/requirements/serve/serve-requirements.txt
+   ```
+4. **uv** (`https://docs.astral.sh/uv/`)
+5. **git** with worktree support
+
+## Configuration
+
+Scripts read `worktree.conf` in the current working directory. Auto-created on first run if Ray can be auto-detected, or create manually:
+
+```
+RAY_REPO=/path/to/ray
+RAY_PYTHON=/path/to/python
+```
+
+- `RAY_REPO`: path to the main Ray git repo (required)
+- `RAY_PYTHON`: Python interpreter with Ray's deps (optional, defaults to `python3`)
+
+## How It Works
+
+Worktree venvs use `--system-site-packages`, inheriting the base environment. A `.pth` file adds the worktree's `python/` to `sys.path`, so `import ray` resolves to the worktree source — no `pip install -e` needed.
+
+Compiled artifacts (`_raylet.so`, `core/`, `thirdparty_files/`, `serve/generated/`) are symlinked from the main tree or installed package.
+
+## Layout
+
+- **Worktrees**: `<cwd>/ray-<name>/`
+- **Per-worktree venv**: `<cwd>/ray-<name>/.venv/`
+- **Config**: `<cwd>/worktree.conf`
+
+## Usage
+
+1. **Discover available worktrees**:
+   ```
+   ls -d ray-*/
+   ```
+
+2. **Create a worktree** (run from project root):
+   ```
+   <skill-dir>/scripts/create-worktree.sh <name> [branch]
+   ```
+
+3. **Activate the venv**:
+   ```
+   source ray-<name>/.venv/bin/activate
+   ```
+
+4. **Remove a worktree**:
+   ```
+   <skill-dir>/scripts/remove-worktree.sh <name> [--delete-branch]
+   ```
+
+## Rules
+
+- **Always activate the venv** before running Python code, tests, or pip commands.
+- **Work within your worktree** — edit files under `ray-<name>/`. Never edit the main Ray tree.
+- **Run git from the worktree** directory, not the main tree.
+- **Run tests from the worktree** with the venv activated:
+  ```
+  source ray-<name>/.venv/bin/activate
+  cd ray-<name>
+  python -m pytest python/ray/tests/test_foo.py
+  ```
+- **Do not rebuild C++** — worktrees share compiled `.so` files via symlinks. Only make Python-level changes.

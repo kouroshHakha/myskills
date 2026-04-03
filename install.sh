@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
 GLOBAL_CLAUDE_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
-PROJECT_DIR="${PROJECT_DIR:-$HOME/default}"
+PROJECT_DIR="${PROJECT_DIR:-$(cd "$SCRIPT_DIR/.." && pwd -P)}"
 PROJECT_CLAUDE_DIR="$PROJECT_DIR/.claude/skills"
 PROJECT_CURSOR_DIR="$PROJECT_DIR/.cursor/skills"
 GLOBAL_CURSOR_DIR="${GLOBAL_CURSOR_SKILLS:-$HOME/.cursor/skills}"

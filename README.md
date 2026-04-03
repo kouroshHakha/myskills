@@ -63,6 +63,7 @@ If **`RAY_REPO`** is omitted, scripts may auto-detect Ray from an editable insta
 | **`install-npx`** | Install/upgrade Node, npm, and `npx` (e.g. via nvm) when the toolchain is missing. |
 | **`install-claude-code`** | Install the `claude` CLI (`claude.ai/install.sh`), fix **`PATH`** in **`~/.bashrc`**, verify. |
 | **`install-anyscale-skills`** | Install chosen Anyscale skill repos with `npx skills` (catalog + prompts; Claude + Cursor paths). |
+| **`ray-lint`** | Run lint checks on the Ray codebase using `pre-commit` hooks (`ci/lint/lint.sh`). |
 
 ## Adding a skill
 

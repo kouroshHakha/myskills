@@ -10,17 +10,38 @@ From this directory:
 ./install.sh
 ```
 
-For each skill directory under `skills/` that contains a `SKILL.md`, the script creates symlinks in:
+For each skill directory under `skills/` that contains a `SKILL.md`, the script:
 
-- **`~/.claude/skills/`** (global — override with **`CLAUDE_SKILLS_DIR`**)
-- **`$PROJECT_DIR/.claude/skills/`** (project — **`PROJECT_DIR`** defaults to **`$HOME/default`**)
+1. **Copies** a full tree of real files into **Cursor** skill dirs (hard copies — Cursor does not reliably load symlinked skill trees).
+2. **Symlinks** **Claude Code** skill dirs to that same copy so there is a single source of truth on disk.
 
-Re-running is safe (idempotent).
+Default destinations:
+
+| Tool | Path | Mechanism |
+|------|------|-----------|
+| **Cursor** | `$PROJECT_DIR/.cursor/skills/` | Hard copy (`cp -aL`) |
+| **Cursor** (optional) | `$HOME/.cursor/skills/` | Same hard copy (disable with `SKIP_GLOBAL_CURSOR=1`) |
+| **Claude** | `$PROJECT_DIR/.claude/skills/` | Symlink → `$PROJECT_DIR/.cursor/skills/<name>` |
+| **Claude** | `$HOME/.claude/skills/` | Symlink → same absolute path as project `.cursor/skills/<name>` |
+
+`PROJECT_DIR` defaults to **`$HOME/default`**. Override with **`PROJECT_DIR=/path/to/workspace`**.
+
+Re-running is safe (idempotent). If **`~/.cursor/skills`** was a symlink, it is replaced by a directory of copied skills.
+
+### Environment variables
+
+| Variable | Meaning |
+|----------|---------|
+| **`PROJECT_DIR`** | Project root (default `$HOME/default`). |
+| **`CLAUDE_SKILLS_DIR`** | Global Claude skills directory (default `$HOME/.claude/skills`). |
+| **`GLOBAL_CURSOR_SKILLS`** | Global Cursor skills directory (default `$HOME/.cursor/skills`). |
+| **`SKIP_GLOBAL_CURSOR=1`** | Only copy to `$PROJECT_DIR/.cursor/skills/`, not `$HOME/.cursor/skills`. |
 
 ```bash
 # Examples
-CLAUDE_SKILLS_DIR=/path/to/skills ./install.sh
 PROJECT_DIR=/path/to/workspace ./install.sh
+SKIP_GLOBAL_CURSOR=1 ./install.sh
+CLAUDE_SKILLS_DIR=/path/to/skills ./install.sh
 ```
 
 ## Configuration

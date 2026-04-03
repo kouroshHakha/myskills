@@ -83,11 +83,18 @@ EOF
 fi
 
 # ---------- Usage ----------
+TRACK=""
 usage() {
-    echo "Usage: $0 <name> [branch]"
+    echo "Usage: $0 [--track <remote/branch>] <name> [branch]"
     echo ""
     echo "  name    Short identifier for the worktree (e.g. fix-scheduling)"
-    echo "  branch  Git branch name (default: wt/<name>)"
+    echo "  branch  Local branch name (default: wt/<name>)"
+    echo ""
+    echo "Options:"
+    echo "  --track <remote/branch>"
+    echo "          Track an existing remote branch (e.g. origin/my-feature)."
+    echo "          The worktree starts at that ref and 'git push' updates it directly."
+    echo "          Useful for iterating on an existing PR."
     echo ""
     echo "Creates a git worktree at $PROJECT_DIR/ray-<name> with its own uv venv."
     echo ""
@@ -97,6 +104,17 @@ usage() {
     echo "  Python:       $RAY_PYTHON"
     exit 1
 }
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --track)
+            [[ $# -lt 2 ]] && { echo "Error: --track requires a value (e.g. origin/my-branch)"; exit 1; }
+            TRACK="$2"; shift 2 ;;
+        -h|--help) usage ;;
+        -*) echo "Error: unknown option '$1'"; usage ;;
+        *) break ;;
+    esac
+done
 
 [[ $# -lt 1 ]] && usage
 
@@ -110,11 +128,22 @@ if [[ -d "$WT" ]]; then
     exit 1
 fi
 
-echo "==> Creating worktree '$NAME' on branch '$BRANCH'..."
-echo "    Ray repo: $MAIN_TREE"
-echo "    Target:   $WT"
 git -C "$MAIN_TREE" config --local extensions.worktreeConfig true 2>/dev/null || true
-git -C "$MAIN_TREE" worktree add "$WT" -b "$BRANCH"
+
+if [[ -n "$TRACK" ]]; then
+    echo "==> Creating worktree '$NAME' tracking '$TRACK'..."
+    echo "    Local branch: $BRANCH"
+    echo "    Ray repo:     $MAIN_TREE"
+    echo "    Target:       $WT"
+    git -C "$MAIN_TREE" worktree add "$WT" -b "$BRANCH" "$TRACK"
+    git -C "$WT" branch --set-upstream-to="$TRACK" "$BRANCH"
+    git -C "$WT" config --worktree push.default upstream
+else
+    echo "==> Creating worktree '$NAME' on branch '$BRANCH'..."
+    echo "    Ray repo: $MAIN_TREE"
+    echo "    Target:   $WT"
+    git -C "$MAIN_TREE" worktree add "$WT" -b "$BRANCH"
+fi
 
 echo "==> Symlinking build artifacts from $ARTIFACT_DIR..."
 rm -f "$WT/python/ray/_raylet.so"
@@ -156,4 +185,7 @@ echo "Worktree path:"
 echo "  $WT"
 echo ""
 echo "Git branch: $BRANCH"
+if [[ -n "$TRACK" ]]; then
+    echo "Tracking:   $TRACK  (git push works directly)"
+fi
 echo "============================================"

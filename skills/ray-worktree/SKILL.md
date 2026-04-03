@@ -64,25 +64,65 @@ Compiled artifacts (`_raylet.so`, `core/`, `thirdparty_files/`, `serve/generated
 
 ## Usage
 
-1. **Discover available worktrees**:
-   ```
-   ls -d ray-*/
-   ```
+All `create-worktree.sh` / `remove-worktree.sh` commands run from the **project root** (the directory containing `worktree.conf` and `ray-*/` directories).
 
-2. **Create a worktree** (run from project root):
-   ```
-   <skill-dir>/scripts/create-worktree.sh <name> [branch]
-   ```
+### Discover available worktrees
 
-3. **Activate the venv**:
-   ```
-   source ray-<name>/.venv/bin/activate
-   ```
+```
+cd ray; git worktree list 
+```
 
-4. **Remove a worktree**:
-   ```
-   <skill-dir>/scripts/remove-worktree.sh <name> [--delete-branch]
-   ```
+### Greenfield: new branch from scratch
+
+Use when starting fresh work (new feature, bug fix, experiment) that is **not** tied to an existing PR or remote branch.
+
+```
+<skill-dir>/scripts/create-worktree.sh <name> [branch]
+```
+
+- `name` — short identifier (e.g. `fix-scheduling`). Worktree is created at `ray-<name>/`.
+- `branch` — optional local branch name (default: `wt/<name>`).
+
+Example:
+
+```
+<skill-dir>/scripts/create-worktree.sh fix-scheduling
+# creates ray-fix-scheduling/ on branch wt/fix-scheduling
+```
+
+### Existing PR: iterate on a remote branch
+
+Use when you need to work on a branch that **already exists on a remote or local** — typically the head branch of an open PR. The `--track` flag starts the worktree at that ref and configures `git push` to update the remote branch directly, even though the local branch has a different name.
+
+```
+git -C <ray-repo> fetch <remote> <branch>
+<skill-dir>/scripts/create-worktree.sh --track <remote>/<branch> <name>
+```
+
+- `<remote>` — the remote that has push access (usually `origin` for your fork).
+- `<branch>` — the remote branch to track (e.g. the head branch of a PR).
+- `<name>` — short identifier. Local branch defaults to `wt/<name>`.
+
+Example:
+
+```
+git -C /path/to/ray fetch origin my-feature
+<skill-dir>/scripts/create-worktree.sh --track origin/my-feature pr123
+# creates ray-pr123/ on local branch wt/pr123, tracking origin/my-feature
+# git push from ray-pr123/ updates origin/my-feature directly
+```
+
+### Activate the venv
+
+```
+source ray-<name>/.venv/bin/activate
+```
+
+### Remove a worktree
+
+```
+<skill-dir>/scripts/remove-worktree.sh <name> [--delete-branch]
+```
 
 ## Rules
 

@@ -173,6 +173,37 @@ PY_VER=$("$RAY_PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.ver
 SITE_PACKAGES="$WT/.venv/lib/python${PY_VER}/site-packages"
 echo "$WT/python" > "$SITE_PACKAGES/ray-worktree.pth"
 
+echo "==> Installing CLI entry-point shims..."
+cat > "$WT/.venv/bin/ray" <<SHIM
+#!$WT/.venv/bin/python
+import sys
+from ray.scripts.scripts import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())
+SHIM
+chmod +x "$WT/.venv/bin/ray"
+
+cat > "$WT/.venv/bin/serve" <<SHIM
+#!$WT/.venv/bin/python
+import sys
+from ray.serve.scripts import cli
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(cli())
+SHIM
+chmod +x "$WT/.venv/bin/serve"
+
+cat > "$WT/.venv/bin/tune" <<SHIM
+#!$WT/.venv/bin/python
+import sys
+from ray.tune.cli.scripts import cli
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(cli())
+SHIM
+chmod +x "$WT/.venv/bin/tune"
+
 echo ""
 echo "============================================"
 echo " Worktree '$NAME' is ready!"

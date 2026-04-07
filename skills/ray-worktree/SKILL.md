@@ -54,6 +54,8 @@ RAY_PYTHON=/path/to/python
 
 Worktree venvs use `--system-site-packages`, inheriting the base environment. A `.pth` file adds the worktree's `python/` to `sys.path`, so `import ray` resolves to the worktree source — no `pip install -e` needed.
 
+CLI entry points (`ray`, `serve`, `tune`) are generated as shim scripts in `.venv/bin/` with a shebang pointing to the worktree's own Python. Without these shims, the `ray`/`serve`/`tune` commands would resolve to the parent environment's copies, which have a hardcoded shebang that bypasses the `.pth` file and silently runs stale code.
+
 Compiled artifacts (`_raylet.so`, `core/`, `thirdparty_files/`, `serve/generated/`) are symlinked from the main tree or installed package.
 
 ## Layout

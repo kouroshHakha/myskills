@@ -1,6 +1,6 @@
 ---
-name: ray-worktree
-description: Manage Ray git worktrees for parallel development. Use when creating, activating, or removing Ray worktrees, or when working on Ray source code in a worktree-based workflow.
+name: worktree-ray
+description: git worktrees management. Instructions on how to manage Ray git worktrees for parallel development and code review. Use when creating, activating, or removing Ray worktrees, or when working on Ray source code in a worktree-based workflow.
 ---
 
 # Ray Worktree Workflow

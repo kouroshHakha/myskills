@@ -1,0 +1,16 @@
+# Simplest cluster: 1 system node + 1 CPU pool. No GPUs.
+# Pass to launch with: launch_eks.py launch -f examples/simple-cpu.yaml
+
+name: kuberay-cpu
+
+# system pool defaults to: instance_type=m7i.large, min=1, max=2
+# (always-on; hosts kuberay-operator + karpenter + kube-system)
+
+nodepools:
+  - name: cpu-worker
+    instance_types: [m7i.xlarge, m7i.2xlarge, m6i.xlarge, m6i.2xlarge]
+    max: 10                       # cap on Karpenter scale-up; min is implicit 0
+    disk_gb: 100
+    labels:
+      ray-role: cpu-worker
+    # No taints — Ray pods land here without needing tolerations.

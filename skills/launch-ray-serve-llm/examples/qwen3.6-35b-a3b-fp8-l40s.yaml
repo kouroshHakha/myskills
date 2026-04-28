@@ -1,0 +1,117 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: rayllm-qwen
+spec:
+  serviceUnhealthySecondThreshold: 1800
+  deploymentUnhealthySecondThreshold: 1800
+  serveConfigV2: |
+    applications:
+    - name: llm_app
+      route_prefix: "/"
+      import_path: ray.serve.llm:build_openai_app
+      args:
+        llm_configs:
+          - model_loading_config:
+              model_id: Qwen/Qwen3.6-35B-A3B-FP8
+            accelerator_type: L40S
+            deployment_config:
+              autoscaling_config:
+                min_replicas: 1
+                max_replicas: 1
+            engine_kwargs:
+              trust_remote_code: true
+              tensor_parallel_size: 2
+              max_model_len: 32768
+              enable_auto_tool_choice: true
+              tool_call_parser: qwen3_coder
+              reasoning_parser: qwen3
+              speculative_config:
+                method: mtp
+                num_speculative_tokens: 2
+            runtime_env:
+              env_vars:
+                HF_HUB_DISABLE_XET: "1"
+                HF_HUB_ENABLE_HF_TRANSFER: "1"
+  rayClusterConfig:
+    rayVersion: "3.0.0.dev0"
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+      template:
+        spec:
+          nodeSelector:
+            ray-eks-pool: cpu-head
+          containers:
+            - name: ray-head
+              image: rayproject/ray-llm:nightly-py311-cu128
+              resources:
+                requests: { cpu: "4", memory: 16Gi }
+                limits:   { cpu: "4", memory: 16Gi }
+              env:
+                - name: HUGGING_FACE_HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hf-token
+                      key: token
+                      optional: true
+                - name: HF_HUB_DISABLE_XET
+                  value: "1"
+                - name: HF_HUB_ENABLE_HF_TRANSFER
+                  value: "1"
+                - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
+                  value: "1"
+                - name: RAY_SERVE_ENABLE_HA_PROXY
+                  value: "1"
+              ports:
+                - { name: gcs,       containerPort: 6379 }
+                - { name: dashboard, containerPort: 8265 }
+                - { name: client,    containerPort: 10001 }
+                - { name: serve,     containerPort: 8000 }
+    workerGroupSpecs:
+      - groupName: gpu-l40s
+        replicas: 1
+        minReplicas: 1
+        maxReplicas: 4
+        rayStartParams:
+          # Belt-and-suspenders: Ray auto-detects this from NVML, but force-advertise
+          # in case auto-detect ever misses on a new image.
+          resources: '"{\"accelerator_type:L40S\": 2}"'
+        template:
+          spec:
+            nodeSelector:
+              ray-eks-pool: gpu-l40s
+            tolerations:
+              - key: nvidia.com/gpu
+                operator: Equal
+                value: "true"
+                effect: NoSchedule
+            containers:
+              - name: ray-worker
+                image: rayproject/ray-llm:nightly-py311-cu128
+                resources:
+                  requests:
+                    cpu: "16"
+                    memory: 96Gi
+                    nvidia.com/gpu: 2
+                  limits:
+                    cpu: "16"
+                    memory: 96Gi
+                    nvidia.com/gpu: 2
+                env:
+                  - name: HUGGING_FACE_HUB_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: hf-token
+                        key: token
+                        optional: true
+                  - name: HF_HUB_DISABLE_XET
+                    value: "1"
+                  - name: HF_HUB_ENABLE_HF_TRANSFER
+                    value: "1"
+                  - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
+                    value: "1"
+                  - name: RAY_SERVE_ENABLE_HA_PROXY
+                    value: "1"
+                ports:
+                  - { name: serve, containerPort: 8000 }

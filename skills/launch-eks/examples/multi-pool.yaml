@@ -1,0 +1,63 @@
+# 4-pool cluster: small CPU, large CPU, L4 GPU, H100 GPU. All scale to zero.
+# Worked example matching the schema documented in SKILL.md.
+
+name: kuberay-prod
+region: us-west-2
+version: "1.31"
+
+system:
+  instance_type: m7i.large        # default. ~$30/mo always-on.
+  min: 1
+  max: 2
+
+# Global disruption defaults; per-pool overrides allowed under each pool.
+disruption:
+  consolidation_policy: WhenEmpty       # don't repack busy nodes
+  consolidate_after: 30s                # idle node terminated in ~2 min
+  expire_after: 720h                    # forced monthly recycle for security patches
+
+nodepools:
+  # General-purpose CPU; Ray driver pods, lightweight workers.
+  - name: cpu-small
+    instance_types: [m7i.xlarge, m7i.2xlarge, m6i.xlarge, m6i.2xlarge]
+    max: 20
+    disk_gb: 100
+    labels:
+      ray-role: cpu-worker
+
+  # Heavy CPU; data-loading / preprocessing workers.
+  - name: cpu-large
+    instance_types: [m7i.8xlarge, m7i.12xlarge]
+    max: 8
+    disk_gb: 200
+    labels:
+      ray-role: cpu-large
+    taints:
+      - key: ray-role
+        value: cpu-large
+        effect: NoSchedule
+
+  # L4 GPU; inference, small training.
+  - name: gpu-l4
+    instance_types: [g6.xlarge, g6.2xlarge, g6.4xlarge, g6.12xlarge]
+    max: 4
+    disk_gb: 300
+    gpu: true
+    labels:
+      ray-role: gpu-worker
+      accelerator: nvidia-l4
+
+  # H100 GPU; large model training/serving. Single instance type because
+  # p5.48xlarge is the only flavor.
+  - name: gpu-h100
+    instance_types: [p5.48xlarge]
+    max: 2
+    disk_gb: 1000
+    gpu: true
+    labels:
+      ray-role: gpu-h100
+      accelerator: nvidia-h100
+    taints:
+      - key: accelerator
+        value: nvidia-h100
+        effect: NoSchedule

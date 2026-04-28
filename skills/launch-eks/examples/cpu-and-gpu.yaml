@@ -1,0 +1,23 @@
+# Mixed CPU + GPU cluster, both scale to zero when idle.
+# Pass to launch with: launch_eks.py launch -f examples/cpu-and-gpu.yaml --smoke-test gpu-l4
+
+name: kuberay-gpu
+
+nodepools:
+  - name: cpu-worker
+    instance_types: [m7i.xlarge, m7i.2xlarge, m6i.xlarge, m6i.2xlarge]
+    max: 10
+    disk_gb: 100
+    labels:
+      ray-role: cpu-worker
+
+  - name: gpu-l4
+    instance_types: [g6.xlarge, g6.2xlarge, g6.4xlarge, g6.12xlarge]
+    max: 4                        # absolute ceiling on GPU node count
+    disk_gb: 300                  # bigger for model weights + image cache
+    gpu: true                     # Bottlerocket NVIDIA AMI, implicit nvidia.com/gpu taint
+    labels:
+      ray-role: gpu-worker
+      accelerator: nvidia-l4
+    # Implicit taint when gpu: true — nvidia.com/gpu=true:NoSchedule
+    # Ray worker specs targeting this pool need a matching toleration.
